@@ -45,12 +45,12 @@ class Wp_Woo_Addon_Extension {
     
     function __construct(){
         add_action('plugins_loaded', array( $this,'check_some_other_plugin'), 10 );
-        add_action( 'woocommerce_register_form', array( $this,'misha_add_register_form_field'), 10 );
-        add_action( 'woocommerce_register_post', array( $this,'misha_validate_fields'), 10, 3 );  
-        add_action( 'woocommerce_created_customer', array( $this,'misha_save_register_fields') );
-        add_action( 'woocommerce_edit_account_form', array( $this,'misha_add_field_edit_account_form') );
-        add_action( 'woocommerce_save_account_details', array( $this,'misha_save_account_details') );
-        add_filter('woocommerce_save_account_details_required_fields', array( $this,'misha_make_field_required'));
+        add_action( 'woocommerce_register_form', array( $this,'add_register_form_field'), 10 );
+        add_action( 'woocommerce_register_post', array( $this,'validate_fields'), 10, 3 );  
+        add_action( 'woocommerce_created_customer', array( $this,'save_register_fields') );
+        add_action( 'woocommerce_edit_account_form', array( $this,'add_field_edit_account_form') );
+        add_action( 'woocommerce_save_account_details', array( $this,'save_account_details') );
+        add_filter('woocommerce_save_account_details_required_fields', array( $this,'make_field_required'));
     } 
     
     public function check_some_other_plugin() {
@@ -63,67 +63,77 @@ class Wp_Woo_Addon_Extension {
 		}
     }
 
-    function misha_add_register_form_field(){
+    function add_register_form_field(){
     
         woocommerce_form_field(
-            'country_to_visit',
+            'company_name',
             array(
                 'type'        => 'text',
-                'required'    => true, // just adds an "*"
-                'label'       => 'Country you want to visit the most'
+                'required'    => false, // just adds an "*"
+                'label'       => 'Your Company Name'
             ),
-            ( isset($_POST['country_to_visit']) ? $_POST['country_to_visit'] : '' )
+            ( isset($_POST['company_name']) ? $_POST['company_name'] : '' )
         );
+
         woocommerce_form_field(
-            'country_to_visit',
+            'company_gst',
             array(
                 'type'        => 'text',
-                'required'    => true, // just adds an "*"
-                'label'       => 'Country you want to visit the most'
+                'required'    =>  false, // just adds an "*"
+                'label'       => 'Add your Company GST in avilable'
             ),
-            ( isset($_POST['country_to_visit']) ? $_POST['country_to_visit'] : '' )
-        );
-        woocommerce_form_field(
-            'country_to_visit',
-            array(
-                'type'        => 'text',
-                'required'    => true, // just adds an "*"
-                'label'       => 'Country you want to visit the most'
-            ),
-            ( isset($_POST['country_to_visit']) ? $_POST['country_to_visit'] : '' )
+            ( isset($_POST['company_gst']) ? $_POST['company_gst'] : '' )
         );
     
     }
  
-    function misha_validate_fields( $username, $email, $errors ) {
+    function validate_fields( $username, $email, $errors ) {
     
-        if ( empty( $_POST['country_to_visit'] ) ) {
-            $errors->add( 'country_to_visit_error', 'We really want to know!' );
+        // if ( empty( $_POST['company_name'] ) ) {
+        //     $errors->add( 'company_name_error', 'We really want to know Your Company Name' );
+        // }
+
+        // if ( empty( $_POST['company_gst'] ) ) {
+        //     $errors->add( 'company_gst_error', 'We really want to know!' );
+        // }
+    
+    }
+ 
+    function save_register_fields( $customer_id ){
+    
+        if ( isset( $_POST['company_name'] ) ) {
+            update_user_meta( $customer_id, 'company_name', wc_clean( $_POST['company_name'] ) );
         }
-    
-    }
- 
-    function misha_save_register_fields( $customer_id ){
-    
-        if ( isset( $_POST['country_to_visit'] ) ) {
-            update_user_meta( $customer_id, 'country_to_visit', wc_clean( $_POST['country_to_visit'] ) );
+        if ( isset( $_POST['company_gst'] ) ) {
+            update_user_meta( $customer_id, 'company_gst', wc_clean( $_POST['company_gst'] ) );
         }
     
     }
 
     
-    // or add_action( 'woocommerce_edit_account_form_start', 'misha_add_field_edit_account_form' );
-    function misha_add_field_edit_account_form() {
+    // or add_action( 'woocommerce_edit_account_form_start', 'add_field_edit_account_form' );
+    function add_field_edit_account_form() {
     
         woocommerce_form_field(
-            'country_to_visit',
+            'company_name',
             array(
                 'type'        => 'text',
                 'required'    => true, // remember, this doesn't make the field required, just adds an "*"
-                'label'       => 'Country you want to visit the most',
+                'label'       => 'Your Company Name',
                 'description' => 'Maybe it is Norway or New Zealand or...?',
             ),
-            get_user_meta( get_current_user_id(), 'country_to_visit', true ) // get the data
+            get_user_meta( get_current_user_id(), 'company_name', true ) // get the data
+        );
+
+        woocommerce_form_field(
+            'company_gst',
+            array(
+                'type'        => 'text',
+                'required'    => true, // remember, this doesn't make the field required, just adds an "*"
+                'label'       => 'Your Company GST',
+                'description' => 'Add if availabe',
+            ),
+            get_user_meta( get_current_user_id(), 'company_gst', true ) // get the data
         );
     
     }
@@ -132,9 +142,10 @@ class Wp_Woo_Addon_Extension {
      * Step 2. Save field value
      */
     
-    function misha_save_account_details( $user_id ) {
+    function save_account_details( $user_id ) {
     
-        update_user_meta( $user_id, 'country_to_visit', sanitize_text_field( $_POST['country_to_visit'] ) );
+        update_user_meta( $user_id, 'company_name', sanitize_text_field( $_POST['company_name'] ) );
+        update_user_meta( $user_id, 'company_gst', sanitize_text_field( $_POST['company_gst'] ) );
     
     }
     
@@ -142,9 +153,10 @@ class Wp_Woo_Addon_Extension {
      * Step 3. Make it required
      */
     
-    function misha_make_field_required( $required_fields ){
+    function make_field_required( $required_fields ){
     
-        $required_fields['country_to_visit'] = 'Country you want to visit the most';
+        $required_fields['company_name'] = 'Your Company Name';
+        $required_fields['company_gst'] = 'Your Company GST';
         return $required_fields;
     
     }
